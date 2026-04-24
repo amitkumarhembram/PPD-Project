@@ -24,7 +24,7 @@ class AdminService {
         queryStr += ` ORDER BY s.created_at DESC`;
 
         const offset = (page - 1) * limit;
-        queryStr += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        queryStr += ` LIMIT ${params.length + 1} OFFSET ${params.length + 2}`;
         
         const dataParams = [...params, limit, offset];
 
@@ -78,43 +78,33 @@ class AdminService {
         const [totalRes, pendingRes, enrolledRes, breakdownRes, branchRes, timeRes, attentionRes] = await Promise.all(queries);
 
         const breakdown = {
-            DRAFT: 0,
-            SUBMITTED: 0,
-            VERIFIED: 0,
-            REJECTED: 0,
-            ENROLLED: 0
+            DRAFT: 0, SUBMITTED: 0, VERIFIED: 0, REJECTED: 0, ENROLLED: 0
         };
 
         breakdownRes.rows.forEach(row => {
             breakdown[row.status] = Number(row.count);
         });
 
-        const branch_enrollments = branchRes.rows.map(row => ({
-            branch_name: row.branch_name,
-            capacity: Number(row.capacity),
-            enrolled: Number(row.enrolled)
-        }));
-
-        const registrations_over_time = timeRes.rows.map(row => ({
-            date: row.date,
-            count: Number(row.count)
-        }));
-
-        const needs_attention = attentionRes.rows.map(row => ({
-            id: row.id,
-            name: row.name,
-            email: row.email,
-            submitted_at: row.created_at
-        }));
-
         return {
             total_applications: Number(totalRes.rows[0].count),
             pending_verifications: Number(pendingRes.rows[0].count),
             total_enrolled: Number(enrolledRes.rows[0].count),
             application_status_breakdown: breakdown,
-            branch_enrollments,
-            registrations_over_time,
-            needs_attention
+            branch_enrollments: branchRes.rows.map(row => ({
+                branch_name: row.branch_name,
+                capacity: Number(row.capacity),
+                enrolled: Number(row.enrolled)
+            })),
+            registrations_over_time: timeRes.rows.map(row => ({
+                date: row.date,
+                count: Number(row.count)
+            })),
+            needs_attention: attentionRes.rows.map(row => ({
+                id: row.id,
+                name: row.name,
+                email: row.email,
+                submitted_at: row.created_at
+            }))
         };
     }
 
@@ -132,7 +122,6 @@ class AdminService {
             err.status = 403;
             throw err;
         }
-
         const query = `UPDATE admin SET name = COALESCE($1, name), role = COALESCE($2, role) WHERE id = $3 RETURNING id, name, email, role`;
         const result = await db.query(query, [name, role, id]);
         return result.rows[0];
@@ -140,16 +129,8 @@ class AdminService {
 
     static async deleteAdmin(id) {
         const adminRes = await db.query('SELECT role FROM admin WHERE id = $1', [id]);
-        if (adminRes.rowCount === 0) {
-            const err = new Error('Admin not found');
-            err.status = 404;
-            throw err;
-        }
-        if (adminRes.rows[0].role === 'SUPERADMIN') {
-            const err = new Error('Cannot delete a SUPERADMIN');
-            err.status = 403;
-            throw err;
-        }
+        if (adminRes.rowCount === 0) { const err = new Error('Admin not found'); err.status = 404; throw err; }
+        if (adminRes.rows[0].role === 'SUPERADMIN') { const err = new Error('Cannot delete a SUPERADMIN'); err.status = 403; throw err; }
         await db.query('DELETE FROM admin WHERE id = $1', [id]);
         return { message: 'Admin deleted' };
     }
@@ -171,19 +152,13 @@ class AdminService {
 
     static async getStudentFull(id) {
         const student = await db.query(`SELECT * FROM student WHERE id = $1`, [id]);
-        if (student.rowCount === 0) {
-            const err = new Error('Student not found');
-            err.status = 404;
-            throw err;
-        }
-        
+        if (student.rowCount === 0) { const err = new Error('Student not found'); err.status = 404; throw err; }
         const [addresses, families, academics, docs] = await Promise.all([
             db.query('SELECT * FROM address WHERE student_id = $1', [id]),
             db.query('SELECT * FROM family_details WHERE student_id = $1', [id]),
             db.query('SELECT * FROM academic_details WHERE student_id = $1', [id]),
             db.query('SELECT * FROM documents WHERE student_id = $1', [id])
         ]);
-
         return {
             ...student.rows[0],
             address: addresses.rows[0] || null,
@@ -197,63 +172,65 @@ class AdminService {
         const { phone, dob, aadhar_number, gender } = updates;
         const query = `
             UPDATE student 
-            SET phone = COALESCE($1, phone), 
-                dob = COALESCE($2, dob), 
-                aadhar_number = COALESCE($3, aadhar_number), 
-                gender = COALESCE($4, gender)
-            WHERE id = $5 
-            RETURNING *`;
+            SET phone = COALESCE($1, phone), dob = COALESCE($2, dob), 
+                aadhar_number = COALESCE($3, aadhar_number), gender = COALESCE($4, gender)
+            WHERE id = $5 RETURNING *`;
         const result = await db.query(query, [phone, dob, aadhar_number, gender, id]);
-        if (result.rowCount === 0) {
-            const err = new Error('Student not found');
-            err.status = 404;
-            throw err;
-        }
+        if (result.rowCount === 0) { const err = new Error('Student not found'); err.status = 404; throw err; }
         return result.rows[0];
     }
 
     static async deleteStudent(id) {
         const studentRes = await db.query('SELECT status FROM student WHERE id = $1', [id]);
-        if (studentRes.rowCount === 0) {
-            const err = new Error('Student not found');
-            err.status = 404;
-            throw err;
-        }
-        if (studentRes.rows[0].status === 'ENROLLED') {
-            const err = new Error('Cannot delete an ENROLLED student');
-            err.status = 403;
-            throw err;
-        }
-        
-        const result = await db.query('DELETE FROM student WHERE id = $1', [id]);
+        if (studentRes.rowCount === 0) { const err = new Error('Student not found'); err.status = 404; throw err; }
+        if (studentRes.rows[0].status === 'ENROLLED') { const err = new Error('Cannot delete an ENROLLED student'); err.status = 403; throw err; }
+        await db.query('DELETE FROM student WHERE id = $1', [id]);
         return { message: 'Student and related records deleted' };
+    }
+
+    static async getEnrollments(status) {
+        let query = `
+            SELECT e.id, e.status, e.created_at, e.current_semester,
+                   s.id as student_id, s.name as student_name, s.email as student_email,
+                   b.name as branch, p.name as program
+            FROM enrollment e
+            JOIN student s ON e.student_id = s.id
+            JOIN branch b ON e.branch_id = b.id
+            JOIN program p ON b.program_id = p.id
+        `;
+        const params = [];
+        if (status) { query += ` WHERE e.status = $1`; params.push(status); }
+        query += ` ORDER BY e.created_at DESC`;
+        const result = await db.query(query, params);
+        return result.rows;
+    }
+
+    static async updateEnrollmentStatus(enrollmentId, status) {
+        if (!['APPROVED', 'REJECTED'].includes(status)) {
+            throw new Error("Status must be 'APPROVED' or 'REJECTED'");
+        }
+        const result = await db.query(
+            `UPDATE enrollment SET status = $1 WHERE id = $2 RETURNING *`,
+            [status, enrollmentId]
+        );
+        if (result.rowCount === 0) throw new Error('Enrollment not found');
+        return result.rows[0];
     }
 
     // --- Programs ---
     static async getPrograms() {
-        const query = `
-            SELECT p.id, p.name, l.name as level_name, p.level_id
-            FROM program p
-            JOIN level l ON p.level_id = l.id
-            ORDER BY p.name ASC
-        `;
-        const result = await db.query(query);
+        const result = await db.query(`SELECT p.id, p.name, l.name as level_name, p.level_id FROM program p JOIN level l ON p.level_id = l.id ORDER BY p.name ASC`);
         return result.rows;
     }
-
     static async createProgram({ name, level_id }) {
-        const query = `INSERT INTO program (name, level_id) VALUES ($1, $2) RETURNING *`;
-        const result = await db.query(query, [name, level_id]);
+        const result = await db.query(`INSERT INTO program (name, level_id) VALUES ($1, $2) RETURNING *`, [name, level_id]);
         return result.rows[0];
     }
-
     static async updateProgram(id, { name, level_id }) {
-        const query = `UPDATE program SET name = COALESCE($1, name), level_id = COALESCE($2, level_id) WHERE id = $3 RETURNING *`;
-        const result = await db.query(query, [name, level_id, id]);
+        const result = await db.query(`UPDATE program SET name = COALESCE($1, name), level_id = COALESCE($2, level_id) WHERE id = $3 RETURNING *`, [name, level_id, id]);
         if (result.rowCount === 0) throw new Error('Program not found');
         return result.rows[0];
     }
-
     static async deleteProgram(id) {
         const result = await db.query(`DELETE FROM program WHERE id = $1 RETURNING *`, [id]);
         if (result.rowCount === 0) throw new Error('Program not found');
@@ -262,30 +239,18 @@ class AdminService {
 
     // --- Branches ---
     static async getBranches() {
-        const query = `
-            SELECT b.id, b.name, b.capacity, b.program_id, p.name as program_name, l.name as level_name
-            FROM branch b
-            JOIN program p ON b.program_id = p.id
-            JOIN level l ON p.level_id = l.id
-            ORDER BY b.name ASC
-        `;
-        const result = await db.query(query);
+        const result = await db.query(`SELECT b.id, b.name, b.capacity, b.program_id, p.name as program_name, l.name as level_name FROM branch b JOIN program p ON b.program_id = p.id JOIN level l ON p.level_id = l.id ORDER BY b.name ASC`);
         return result.rows;
     }
-
     static async createBranch({ name, program_id, capacity }) {
-        const query = `INSERT INTO branch (name, program_id, capacity) VALUES ($1, $2, $3) RETURNING *`;
-        const result = await db.query(query, [name, program_id, capacity]);
+        const result = await db.query(`INSERT INTO branch (name, program_id, capacity) VALUES ($1, $2, $3) RETURNING *`, [name, program_id, capacity]);
         return result.rows[0];
     }
-
     static async updateBranch(id, { name, program_id, capacity }) {
-        const query = `UPDATE branch SET name = COALESCE($1, name), program_id = COALESCE($2, program_id), capacity = COALESCE($3, capacity) WHERE id = $4 RETURNING *`;
-        const result = await db.query(query, [name, program_id, capacity, id]);
+        const result = await db.query(`UPDATE branch SET name = COALESCE($1, name), program_id = COALESCE($2, program_id), capacity = COALESCE($3, capacity) WHERE id = $4 RETURNING *`, [name, program_id, capacity, id]);
         if (result.rowCount === 0) throw new Error('Branch not found');
         return result.rows[0];
     }
-
     static async deleteBranch(id) {
         const result = await db.query(`DELETE FROM branch WHERE id = $1 RETURNING *`, [id]);
         if (result.rowCount === 0) throw new Error('Branch not found');

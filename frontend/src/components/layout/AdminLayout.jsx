@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, Navigate, useLocation } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 import Navbar from './Navbar';
 import BottomNav from './BottomNav';
 import Sidebar from './Sidebar';
@@ -12,7 +12,6 @@ const AdminLayout = () => {
       user = JSON.parse(atob(token.split(".")[1]));
     } catch (err) {}
   }
-  const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   if (!token || token === 'undefined' || (user.adminRole !== 'SUPERADMIN' && user.role !== 'admin')) {
@@ -22,6 +21,7 @@ const AdminLayout = () => {
   const links = [
     { to: '/admin', label: 'HOME', icon: 'grid_view', end: true },
     { to: '/admin/applications', label: 'Applications', icon: 'fact_check' },
+    { to: '/admin/enrollments', label: 'Enrollments', icon: 'how_to_reg' },
     { to: '/admin/users', label: 'Users', icon: 'manage_accounts' },
     { to: '/admin/students', label: 'Students', icon: 'groups' },
     { to: '/admin/academic', label: 'Academic', icon: 'auto_stories' }

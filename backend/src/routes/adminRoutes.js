@@ -18,6 +18,9 @@ router.get('/students/:id', verifyAdmin, AdminController.getStudentFull);
 router.put('/students/:id', verifyAdmin, AdminController.updateStudent);
 router.delete('/students/:id', verifyAdmin, AdminController.deleteStudent);
 
+router.get('/enrollments', verifyAdmin, AdminController.getEnrollments);
+router.put('/enrollments/:id', verifyAdmin, AdminController.updateEnrollmentStatus);
+
 // Academic Management
 router.get('/programs', verifyAdmin, AdminController.getPrograms);
 router.post('/programs', verifyAdmin, AdminController.createProgram);
@@ -29,7 +32,6 @@ router.post('/branches', verifyAdmin, AdminController.createBranch);
 router.put('/branches/:id', verifyAdmin, AdminController.updateBranch);
 router.delete('/branches/:id', verifyAdmin, AdminController.deleteBranch);
 
-// Subject & Curriculum Management
 const SubjectController = require('../controllers/subjectController');
 router.get('/subjects', verifyAdmin, SubjectController.getAllSubjects);
 router.post('/subjects', verifyAdmin, SubjectController.createSubject);

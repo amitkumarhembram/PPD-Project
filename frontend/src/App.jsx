@@ -21,6 +21,7 @@ import AdminApplications from './pages/admin/AdminApplications';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminStudents from './pages/admin/AdminStudents';
 import StudentDetail from './pages/admin/StudentDetail';
+import AdminEnrollments from './pages/admin/AdminEnrollments';
 import AcademicManagement from './pages/admin/AcademicManagement';
 
 function App() {
@@ -43,6 +44,7 @@ function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="applications" element={<AdminApplications />} />
+          <Route path="enrollments" element={<AdminEnrollments />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="students" element={<AdminStudents />} />
           <Route path="students/:id" element={<StudentDetail />} />

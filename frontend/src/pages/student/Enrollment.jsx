@@ -22,12 +22,10 @@ const Enrollment = () => {
         const appRes = await api.get('/application/me');
         setEligibility(appRes.data.highest_qualification || null);
         setAppStatus(appRes.data.status || null);
-        
         try {
           const enrollRes = await api.get('/enrollment/me');
           setEnrollment(enrollRes.data);
         } catch(e) {}
-        
         const progRes = await api.get('/programs');
         setPrograms(progRes.data);
       } catch (err) {
@@ -56,7 +54,7 @@ const Enrollment = () => {
     try {
       await api.post('/enrollment', { branch_id: selectedBranch });
       alert('Enrollment successful');
-      window.location.reload(); // Refresh to catch the new state
+      window.location.reload();
     } catch (err) {
       alert(err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to enroll in branch.');
     } finally {
@@ -98,17 +96,26 @@ const Enrollment = () => {
       </div>
 
       {enrollment ? (
-        <Card className="p-8 border-green-500/30 bg-green-50">
+        <Card className={`p-8 ${enrollment.status === 'APPROVED' ? 'border-green-500/30 bg-green-50' : enrollment.status === 'REJECTED' ? 'border-red-500/30 bg-red-50' : 'border-yellow-500/30 bg-yellow-50'}`}>
           <div className="flex items-start gap-4">
-            <span className="material-symbols-outlined text-green-600 text-4xl mt-1">check_circle</span>
+            <span className={`material-symbols-outlined text-4xl mt-1 ${enrollment.status === 'APPROVED' ? 'text-green-600' : enrollment.status === 'REJECTED' ? 'text-red-600' : 'text-yellow-600'}`}>
+              {enrollment.status === 'APPROVED' ? 'check_circle' : enrollment.status === 'REJECTED' ? 'cancel' : 'pending'}
+            </span>
             <div>
-              <h3 className="font-extrabold uppercase tracking-widest text-lg text-green-700 mb-2">Enrollment Completed</h3>
-              <p className="text-sm text-green-800 font-medium leading-relaxed">
-                You have successfully enrolled in <strong>{enrollment.program}</strong> - <strong>{enrollment.branch}</strong>.
+              <h3 className={`font-extrabold uppercase tracking-widest text-lg mb-2 ${enrollment.status === 'APPROVED' ? 'text-green-700' : enrollment.status === 'REJECTED' ? 'text-red-700' : 'text-yellow-700'}`}>
+                {enrollment.status === 'APPROVED' ? 'Enrollment Approved' : enrollment.status === 'REJECTED' ? 'Enrollment Rejected' : 'Enrollment Under Review'}
+              </h3>
+              <p className={`text-sm font-medium leading-relaxed ${enrollment.status === 'APPROVED' ? 'text-green-800' : enrollment.status === 'REJECTED' ? 'text-red-800' : 'text-yellow-800'}`}>
+                {enrollment.status === 'APPROVED'
+                  ? <>Your enrollment in <strong>{enrollment.program}</strong> - <strong>{enrollment.branch}</strong> has been approved.</>
+                  : enrollment.status === 'REJECTED'
+                  ? <>Your enrollment in <strong>{enrollment.program}</strong> - <strong>{enrollment.branch}</strong> was rejected. Please contact the administration.</>
+                  : <>Your enrollment request for <strong>{enrollment.program}</strong> - <strong>{enrollment.branch}</strong> has been submitted and is awaiting admin approval.</>
+                }
               </p>
-              <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-200">
-                <span className="w-2 h-2 rounded-full bg-green-600 animate-pulse"></span>
-                <span className="text-[10px] font-black uppercase tracking-widest text-green-800">
+              <div className={`mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${enrollment.status === 'APPROVED' ? 'bg-green-200' : enrollment.status === 'REJECTED' ? 'bg-red-200' : 'bg-yellow-200'}`}>
+                <span className={`w-2 h-2 rounded-full animate-pulse ${enrollment.status === 'APPROVED' ? 'bg-green-600' : enrollment.status === 'REJECTED' ? 'bg-red-600' : 'bg-yellow-600'}`}></span>
+                <span className={`text-[10px] font-black uppercase tracking-widest ${enrollment.status === 'APPROVED' ? 'text-green-800' : enrollment.status === 'REJECTED' ? 'text-red-800' : 'text-yellow-800'}`}>
                   Status: {enrollment.status}
                 </span>
               </div>
@@ -168,15 +175,9 @@ const Enrollment = () => {
                      {br.capacity !== undefined && (
                        <p className="text-secondary text-xs font-bold uppercase tracking-widest">Capacity: {br.capacity}</p>
                      )}
-                     {br.fee_per_semester && (
-                       <div className="mt-4 pt-4 border-t border-outline-variant/30 flex justify-between text-[10px] font-bold uppercase tracking-widest">
-                         <span className="text-secondary">Fee: ₹{br.fee_per_semester}</span>
-                       </div>
-                     )}
                    </Card>
                  ))}
                </div>
-
                <div className="flex justify-end pt-6">
                  {lockReason ? (
                     <Button disabled={true} className="opacity-50 cursor-not-allowed">Profile Verification Required</Button>
