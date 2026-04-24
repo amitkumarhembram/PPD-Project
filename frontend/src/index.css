@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body { 
+    @apply bg-background text-on-background font-body antialiased;
+    background: radial-gradient(circle at 50% 50%, #ffffff 0%, #f3f4f6 100%);
+    min-height: max(884px, 100dvh);
+  }
+}
+
+@layer utilities {
+  .primary-gradient {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  }
+  .card-shadow {
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+  }
+  .status-shadow {
+    box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+  }
+  .bottom-nav-blur {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .ghost-border {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+}
