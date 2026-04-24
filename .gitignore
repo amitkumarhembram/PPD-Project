@@ -17,11 +17,7 @@ backend/uploads/
 frontend/dist/
 frontend/dist-ssr/
 
-# ─── Destructive / setup scripts (local use only) ───────────────
-backend/full-reset.js
-backend/setup-db.js
-backend/setup-admin.js
-backend/migrate.js
+backend/seed-production.js
 
 # ─── Logs ───────────────────────────────────────────────────────
 *.log
