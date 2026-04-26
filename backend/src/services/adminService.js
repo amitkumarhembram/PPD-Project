@@ -24,7 +24,7 @@ class AdminService {
         queryStr += ` ORDER BY s.created_at DESC`;
 
         const offset = (page - 1) * limit;
-        queryStr += ` LIMIT ${params.length + 1} OFFSET ${params.length + 2}`;
+        queryStr += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         
         const dataParams = [...params, limit, offset];
 
